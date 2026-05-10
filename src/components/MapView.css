@@ -1,0 +1,185 @@
+.mapview-container {
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  background: white;
+}
+
+/* ── 헤더 ── */
+.mapview-header {
+  border-bottom: 1px solid #e5e7eb;
+  padding: 16px;
+}
+
+.mapview-header-inner {
+  max-width: 896px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.back-btn {
+  width: 36px;
+  height: 36px;
+  border: none;
+  background: transparent;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s;
+  color: #374151;
+}
+
+.back-btn:hover {
+  background: #f3f4f6;
+}
+
+.mapview-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #111827;
+}
+
+/* ── 지도 영역 ── */
+.map-area {
+  flex: 1;
+  background: #f3f4f6;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.map-placeholder {
+  text-align: center;
+}
+
+.map-placeholder-icon {
+  font-size: 64px;
+  margin-bottom: 8px;
+}
+
+.map-placeholder-text {
+  font-size: 16px;
+  color: #6b7280;
+  margin-top: 16px;
+}
+
+.map-placeholder-sub {
+  font-size: 13px;
+  color: #9ca3af;
+  margin-top: 8px;
+}
+
+/* ── 경로 패널 ── */
+.route-panel {
+  border-top: 1px solid #e5e7eb;
+  padding: 16px;
+  background: white;
+}
+
+.route-panel-inner {
+  max-width: 896px;
+  margin: 0 auto;
+}
+
+.route-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.route-panel-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: #111827;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.total-time-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: linear-gradient(135deg, #f3e8ff, #fce7f3);
+  padding: 6px 14px;
+  border-radius: 9999px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #7c3aed;
+}
+
+/* ── 경로 목록 ── */
+.route-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.route-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  background: #f9fafb;
+  border-radius: 8px;
+}
+
+.route-number {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #a855f7, #ec4899);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.route-info {
+  flex: 1;
+}
+
+.route-name {
+  font-size: 13px;
+  font-weight: 500;
+  color: #111827;
+}
+
+.route-location {
+  font-size: 12px;
+  color: #6b7280;
+  margin-top: 2px;
+}
+
+/* ── 구간 정보 ── */
+.segment-info {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 6px 0;
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.segment-distance {
+  font-weight: 500;
+  color: #374151;
+}
+
+.segment-dot {
+  color: #d1d5db;
+}
+
+.segment-duration {
+  font-weight: 500;
+  color: #374151;
+}
