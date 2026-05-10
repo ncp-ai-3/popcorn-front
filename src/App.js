@@ -1,9 +1,10 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { ChatMessage } from './components/ChatMessage';
 import { ChatInput } from './components/ChatInput';
 import { MapView } from './components/MapView';
 import { LoginPage } from './components/LoginPage';
 import { OAuthCallback } from './components/OAuthCallback';
+import { apiFetch } from './api';
 import './App.css';
 
 export default function App() {
@@ -11,8 +12,10 @@ export default function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(
     !!localStorage.getItem('accessToken')
   );
+  const [currentPath, setCurrentPath] = useState(window.location.pathname);
 
-  const isCallback = window.location.pathname === '/callback';
+  const isCallback = ['/callback', '/login/oauth2/code/naver'].includes(currentPath);
+  const isChatPath = currentPath === '/chat';
 
   const [messages, setMessages] = useState([
     {
@@ -34,7 +37,12 @@ export default function App() {
     scrollToBottom();
   }, [messages]);
 
-  const userId = localStorage.getItem('memberId');
+  useEffect(() => {
+    if (isLoggedIn && !isCallback && !isChatPath) {
+      window.history.replaceState({}, '', '/chat');
+      setCurrentPath('/chat');
+    }
+  }, [isLoggedIn, isCallback, isChatPath]);
 
   const handleSendMessage = async (text) => {
     const userMessage = {
@@ -47,18 +55,15 @@ export default function App() {
     setIsLoading(true);
 
     try {
-      const response = await fetch('http://localhost:8080/api/popups', {
+      const data = await apiFetch('/api/v1/chats', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          userId: Number(userId),
           question: text,
         }),
       });
 
-      const data = await response.json();
-
-      const popups = data.result.recommendedPopups.map((popup) => ({
+      const result = data.result || data;
+      const popups = (result.recommendedPopups || []).map((popup) => ({
         id: String(popup.id),
         name: popup.title,
         location: popup.address,
@@ -75,7 +80,7 @@ export default function App() {
 
       const botMessage = {
         id: (Date.now() + 1).toString(),
-        text: data.result.answer,
+        text: result.answer,
         isBot: true,
         popups: popups,
       };
@@ -85,7 +90,7 @@ export default function App() {
     } catch (error) {
       setMessages((prev) => [...prev, {
         id: (Date.now() + 1).toString(),
-        text: '팝업 정보를 불러오는데 실패했습니다. 다시 시도해주세요.',
+        text: '아직 채팅 API가 연결되지 않았어요. 지금은 채팅 화면 확인용으로 입력만 보여드리고 있습니다.',
         isBot: true,
       }]);
 
@@ -104,17 +109,26 @@ export default function App() {
     }
   };
 
+  const handleLoginSuccess = useCallback((success = true) => {
+    const nextPath = success ? '/chat' : '/';
+    window.history.replaceState({}, '', nextPath);
+    setCurrentPath(nextPath);
+    setIsLoggedIn(success);
+    setShowMap(false);
+  }, []);
+
+  const handleLocalLogin = useCallback(() => {
+    window.history.replaceState({}, '', '/chat');
+    setCurrentPath('/chat');
+    setIsLoggedIn(true);
+  }, []);
+
   if (isCallback) {
-    return (
-      <OAuthCallback onLoginSuccess={() => {
-        setIsLoggedIn(true);
-        window.history.replaceState({}, '', '/');
-      }} />
-    );
+    return <OAuthCallback onLoginSuccess={handleLoginSuccess} />;
   }
 
   if (!isLoggedIn) {
-    return <LoginPage onLogin={() => setIsLoggedIn(true)} />;
+    return <LoginPage onLogin={handleLocalLogin} />;
   }
 
   if (showMap) {
