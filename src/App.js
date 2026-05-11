@@ -10,6 +10,7 @@ import { apiFetch } from './api';
 import './App.css';
 
 const BOOKMARK_STORAGE_KEY = 'bookmarkedPopups';
+const CHAT_STORAGE_KEY = 'popcorn_chat_messages';
 
 function normalizePopup(popup) {
   const categories = popup.categories || [];
@@ -100,6 +101,26 @@ const DEMO_ROUTE_POPUPS = [
   }),
 ];
 
+const INITIAL_MESSAGES = [
+  {
+    id: '1',
+    text: '안녕하세요! 서울의 팝업 경로를 추천해드립니다. 가고 싶은 지역과 팝업 테마를 알려주세요!',
+    isBot: true,
+  },
+  {
+    id: 'featured-popup',
+    text: '추천 팝업입니다.',
+    isBot: true,
+    popups: [FEATURED_POPUP],
+  },
+  {
+    id: 'demo-route-popups',
+    text: '경로 시연용 추천 팝업입니다.',
+    isBot: true,
+    popups: DEMO_ROUTE_POPUPS,
+  },
+];
+
 function createFallbackRoute(popups) {
   return {
     totalDistanceMeter: 0,
@@ -126,6 +147,21 @@ function saveBookmarks(bookmarks) {
   localStorage.setItem(BOOKMARK_STORAGE_KEY, JSON.stringify(bookmarks));
 }
 
+function getChatStorageKey() {
+  const memberId = localStorage.getItem('memberId');
+  return memberId ? `${CHAT_STORAGE_KEY}_${memberId}` : CHAT_STORAGE_KEY;
+}
+
+function loadChatMessages() {
+  try {
+    const saved = sessionStorage.getItem(getChatStorageKey());
+    const parsed = saved ? JSON.parse(saved) : null;
+    return Array.isArray(parsed) ? parsed : INITIAL_MESSAGES;
+  } catch (error) {
+    return INITIAL_MESSAGES;
+  }
+}
+
 function normalizeBookmark(bookmark) {
   if (bookmark.popup) return bookmark;
 
@@ -146,26 +182,9 @@ export default function App() {
   const isCallback = ['/callback', '/login/oauth2/code/naver'].includes(currentPath);
   const isChatPath = currentPath === '/chat';
   const isBookmarkPath = currentPath === '/bookmarks';
+  const isMapPath = currentPath === '/map';
 
-  const [messages, setMessages] = useState([
-    {
-      id: '1',
-      text: '안녕하세요! 서울의 팝업 경로를 추천해드립니다. 가고 싶은 지역과 팝업 테마를 알려주세요!',
-      isBot: true,
-    },
-    {
-      id: 'featured-popup',
-      text: '추천 팝업입니다.',
-      isBot: true,
-      popups: [FEATURED_POPUP],
-    },
-    {
-      id: 'demo-route-popups',
-      text: '경로 시연용 추천 팝업입니다.',
-      isBot: true,
-      popups: DEMO_ROUTE_POPUPS,
-    },
-  ]);
+  const [messages, setMessages] = useState(loadChatMessages);
   const [isLoading, setIsLoading] = useState(false);
   const [showMap, setShowMap] = useState(false);
   const [mapMode, setMapMode] = useState('route');
@@ -176,6 +195,8 @@ export default function App() {
   const [bookmarks, setBookmarks] = useState(loadBookmarks);
   const [isBookmarking, setIsBookmarking] = useState(false);
   const messagesEndRef = useRef(null);
+  const isMountedRef = useRef(true);
+  const chatAbortRef = useRef(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -186,13 +207,59 @@ export default function App() {
   }, [messages]);
 
   useEffect(() => {
-    if (isLoggedIn && !isCallback && !isChatPath && !isBookmarkPath) {
+    if (isChatPath && !showMap) {
+      setTimeout(scrollToBottom, 0);
+    }
+  }, [isChatPath, showMap]);
+
+  useEffect(() => {
+    try {
+      sessionStorage.setItem(getChatStorageKey(), JSON.stringify(messages));
+    } catch {
+      return;
+    }
+  }, [messages]);
+
+  useEffect(() => {
+    const handlePopState = () => {
+      const nextPath = window.location.pathname;
+      setCurrentPath(nextPath);
+
+      if (nextPath !== '/map') {
+        setShowMap(false);
+      } else if (selectedPopups.length > 0) {
+        const params = new URLSearchParams(window.location.search);
+        setMapMode(params.get('mode') || 'route');
+        setShowMap(true);
+      } else {
+        window.history.replaceState({}, '', '/chat');
+        setCurrentPath('/chat');
+        setShowMap(false);
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [selectedPopups.length]);
+
+  useEffect(() => {
+    return () => {
+      isMountedRef.current = false;
+      chatAbortRef.current?.abort();
+    };
+  }, []);
+
+  useEffect(() => {
+    if (isLoggedIn && !isCallback && !isChatPath && !isBookmarkPath && !isMapPath) {
       window.history.replaceState({}, '', '/chat');
       setCurrentPath('/chat');
     }
-  }, [isLoggedIn, isCallback, isChatPath, isBookmarkPath]);
+  }, [isLoggedIn, isCallback, isChatPath, isBookmarkPath, isMapPath]);
 
   const handleSendMessage = async (text) => {
+    chatAbortRef.current?.abort();
+    const controller = new AbortController();
+    chatAbortRef.current = controller;
     const userMessage = {
       id: Date.now().toString(),
       text,
@@ -205,10 +272,13 @@ export default function App() {
     try {
       const data = await apiFetch('/api/v1/chats', {
         method: 'POST',
+        signal: controller.signal,
         body: JSON.stringify({
           question: text,
         }),
       });
+
+      if (!isMountedRef.current) return;
 
       const result = data.result || data;
       const popups = (result.recommendedPopups || []).map(normalizePopup);
@@ -223,6 +293,8 @@ export default function App() {
       setMessages((prev) => [...prev, botMessage]);
 
     } catch (error) {
+      if (!isMountedRef.current || error.name === 'AbortError') return;
+
       setMessages((prev) => [...prev, {
         id: (Date.now() + 1).toString(),
         text: '아직 채팅 API가 연결되지 않았어요. 지금은 채팅 화면 확인용으로 입력만 보여드리고 있습니다.',
@@ -230,7 +302,12 @@ export default function App() {
       }]);
 
     } finally {
-      setIsLoading(false);
+      if (chatAbortRef.current === controller) {
+        chatAbortRef.current = null;
+      }
+      if (isMountedRef.current) {
+        setIsLoading(false);
+      }
     }
   };
 
@@ -270,7 +347,8 @@ export default function App() {
         setSelectedRoute(createFallbackRoute(currentMessage.popups));
       } finally {
         setMapMode('route');
-        window.history.replaceState({}, '', `/map?mode=route&popupId=${popupId}`);
+        window.history.pushState({}, '', `/map?mode=route&popupId=${popupId}`);
+        setCurrentPath('/map');
         setShowMap(true);
       }
     }
@@ -367,7 +445,7 @@ export default function App() {
   };
 
   const handleOpenBookmarks = useCallback(async () => {
-    window.history.replaceState({}, '', '/bookmarks');
+    window.history.pushState({}, '', '/bookmarks');
     setCurrentPath('/bookmarks');
     setSelectedPopupDetail(null);
     setShowMap(false);
@@ -389,7 +467,8 @@ export default function App() {
     setMapMode('bookmark');
     setSelectedRoute(null);
     setSelectedPopupDetail(null);
-    window.history.replaceState({}, '', '/map?mode=bookmark');
+    window.history.pushState({}, '', '/map?mode=bookmark');
+    setCurrentPath('/map');
 
     try {
       const data = await apiFetch('/api/v1/bookmarks');
@@ -404,8 +483,7 @@ export default function App() {
   }, [bookmarks]);
 
   const handleBackToChat = useCallback(() => {
-    window.history.replaceState({}, '', '/chat');
-    setCurrentPath('/chat');
+    window.history.back();
     setSelectedPopupDetail(null);
   }, []);
 
@@ -439,8 +517,7 @@ export default function App() {
           mode={mapMode}
           popups={selectedPopups}
           onBack={() => {
-            window.history.replaceState({}, '', '/chat');
-            setShowMap(false);
+            window.history.back();
           }}
           route={selectedRoute}
           onShowDetail={handleShowPopupDetail}
@@ -518,7 +595,6 @@ export default function App() {
 
           {isLoading && (
             <div className="loading-row">
-              <div className="bot-avatar">✨</div>
               <div className="loading-bubble">
                 <span className="dot" style={{ animationDelay: '0ms' }} />
                 <span className="dot" style={{ animationDelay: '150ms' }} />

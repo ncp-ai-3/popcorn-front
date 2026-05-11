@@ -3,10 +3,6 @@ import './ChatMessage.css';
 export function ChatMessage({ message, isBot, popups, onShowRoute, onShowDetail }) {
   return (
     <div className={`message-row ${isBot ? 'message-row--bot' : 'message-row--user'}`}>
-      {isBot && (
-        <img className="bot-avatar" src="/popcorn_brand_logo.png" alt="POPCORN" />
-      )}
-
       <div className="message-body">
         <div className={`bubble ${isBot ? 'bubble--bot' : 'bubble--user'}`}>
           <p className="bubble-text">{message}</p>
@@ -51,9 +47,6 @@ export function ChatMessage({ message, isBot, popups, onShowRoute, onShowDetail 
         )}
       </div>
 
-      {!isBot && (
-        <div className="user-avatar">🙋</div>
-      )}
     </div>
   );
 }
