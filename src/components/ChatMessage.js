@@ -1,10 +1,10 @@
 import './ChatMessage.css';
 
-export function ChatMessage({ message, isBot, popups, onShowRoute }) {
+export function ChatMessage({ message, isBot, popups, onShowRoute, onShowDetail }) {
   return (
     <div className={`message-row ${isBot ? 'message-row--bot' : 'message-row--user'}`}>
       {isBot && (
-        <div className="bot-avatar">🤖</div>
+        <img className="bot-avatar" src="/popcorn-logo.svg" alt="POPCORN" />
       )}
 
       <div className="message-body">
@@ -29,12 +29,22 @@ export function ChatMessage({ message, isBot, popups, onShowRoute }) {
                     <p className="popup-detail"><span>기간:</span> {popup.period}</p>
                   </div>
                 </div>
-                <button
-                  className="route-btn"
-                  onClick={() => onShowRoute?.(popup.id)}
-                >
-                  경로보기
-                </button>
+                <div className={`popup-actions ${popup.showRoute === false ? 'popup-actions--single' : ''}`}>
+                  {popup.showRoute !== false && (
+                    <button
+                      className="route-btn"
+                      onClick={() => onShowRoute?.(popup.id)}
+                    >
+                      경로보기
+                    </button>
+                  )}
+                  <button
+                    className="detail-btn"
+                    onClick={() => onShowDetail?.(popup)}
+                  >
+                    상세 정보 보기 →
+                  </button>
+                </div>
               </div>
             ))}
           </div>
