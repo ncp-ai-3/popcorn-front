@@ -33,6 +33,9 @@ export function saveAuthTokens({ accessToken, refreshToken, memberId }) {
 
 export async function apiFetch(path, options = {}) {
   const { accessToken, refreshToken } = getStoredTokens();
+  const requestPath = API_BASE_URL.endsWith('/api') && path.startsWith('/api/')
+    ? path.replace('/api', '')
+    : path;
   const headers = {
     ...(options.body ? { 'Content-Type': 'application/json' } : {}),
     ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
@@ -40,7 +43,7 @@ export async function apiFetch(path, options = {}) {
     ...options.headers,
   };
 
-  const response = await fetch(`${API_BASE_URL}${path}`, {
+  const response = await fetch(`${API_BASE_URL}${requestPath}`, {
     ...options,
     headers,
   });
