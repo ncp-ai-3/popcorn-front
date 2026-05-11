@@ -102,10 +102,18 @@
   align-items: flex-end;
 }
 
-.map-popup-poster {
+.map-popup-posters {
   position: absolute;
-  left: -8px;
-  bottom: 30px;
+  left: 13px;
+  bottom: 32px;
+  display: flex;
+  gap: 4px;
+  max-width: 160px;
+  overflow-x: auto;
+  transform: translateX(-50%);
+}
+
+.map-popup-poster {
   width: 42px;
   height: 42px;
   border-radius: 6px;
@@ -116,8 +124,9 @@
 }
 
 .map-popup-order {
-  width: 24px;
+  min-width: 24px;
   height: 24px;
+  padding: 0 7px;
   border-radius: 999px;
   background: #8a6800;
   color: white;
@@ -159,10 +168,17 @@
   font-size: 13px;
   font-weight: 700;
   line-height: 1.2;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  overflow: hidden;
+  box-shadow: 0 3px 8px rgba(30, 30, 30, 0.14);
+}
+
+.map-popup-label span {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  box-shadow: 0 3px 8px rgba(30, 30, 30, 0.14);
 }
 
 /* ── 경로 패널 ── */

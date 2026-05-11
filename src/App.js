@@ -255,6 +255,7 @@ export default function App() {
           reservationUrl: popup.reservationUrl,
           openTime: popup.openTime,
           closeTime: popup.closeTime,
+          order: popup.order,
         }));
 
         setSelectedPopups(orderedPopups.length > 0 ? orderedPopups : currentMessage.popups);

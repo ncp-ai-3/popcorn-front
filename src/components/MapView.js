@@ -40,6 +40,64 @@ function escapeHtml(value) {
   }[char]));
 }
 
+function getCoordinateKey(longitude, latitude) {
+  return `${Number(longitude).toFixed(7)},${Number(latitude).toFixed(7)}`;
+}
+
+function getPopupOrder(popup, index) {
+  return Number(popup.routeOrder || popup.order || popup.sequence || index + 1);
+}
+
+function groupPopupsByCoordinate(popups) {
+  const groups = new Map();
+
+  popups.forEach((popup, index) => {
+    const order = getPopupOrder(popup, index);
+    const hasCoordinate = Number.isFinite(Number(popup.lng)) && Number.isFinite(Number(popup.lat));
+    const key = hasCoordinate ? getCoordinateKey(popup.lng, popup.lat) : `missing-${index}`;
+    const item = { ...popup, routeOrder: order };
+
+    if (!groups.has(key)) {
+      groups.set(key, {
+        key,
+        lat: hasCoordinate ? Number(popup.lat) : null,
+        lng: hasCoordinate ? Number(popup.lng) : null,
+        popups: [],
+      });
+    }
+
+    groups.get(key).popups.push(item);
+  });
+
+  return Array.from(groups.values())
+    .map((group) => ({
+      ...group,
+      popups: group.popups.sort((a, b) => a.routeOrder - b.routeOrder),
+      minOrder: Math.min(...group.popups.map((popup) => popup.routeOrder)),
+    }))
+    .sort((a, b) => a.minOrder - b.minOrder);
+}
+
+function renderMarkerContent(group, mode) {
+  const orderText = group.popups.map((popup) => popup.routeOrder).join(', ');
+  const titleHtml = group.popups
+    .map((popup) => `<span>${mode === 'route' ? `${popup.routeOrder}. ` : ''}${escapeHtml(popup.name)}</span>`)
+    .join('');
+  const posterHtml = group.popups
+    .filter((popup) => popup.image)
+    .map((popup) => `<img class="map-popup-poster" src="${escapeHtml(popup.image)}" alt="" data-popup-id="${escapeHtml(popup.id)}" />`)
+    .join('');
+
+  return `
+    <button class="map-popup-marker ${mode === 'bookmark' ? 'map-popup-marker--bookmark' : 'map-popup-marker--route'}" type="button">
+      ${posterHtml ? `<span class="map-popup-posters">${posterHtml}</span>` : ''}
+      ${mode === 'route' ? `<span class="map-popup-order">${escapeHtml(orderText)}</span>` : ''}
+      <span class="map-popup-pin"></span>
+      <span class="map-popup-label">${titleHtml}</span>
+    </button>
+  `;
+}
+
 export function MapView({ mode = 'route', popups, onBack, route, onShowDetail }) {
   const mapRef = useRef(null);
   const mapInstanceRef = useRef(null);
@@ -51,9 +109,10 @@ export function MapView({ mode = 'route', popups, onBack, route, onShowDetail })
     () => (route?.path || []).filter((point) => point.latitude && point.longitude),
     [route]
   );
-  const markerPopups = useMemo(
-    () => popups.filter((popup) => popup.lat && popup.lng),
-    [popups]
+  const routeGroups = useMemo(() => groupPopupsByCoordinate(popups), [popups]);
+  const markerGroups = useMemo(
+    () => routeGroups.filter((group) => group.lat && group.lng),
+    [routeGroups]
   );
 
   useEffect(() => {
@@ -68,8 +127,8 @@ export function MapView({ mode = 'route', popups, onBack, route, onShowDetail })
       .then(() => {
         if (!isMounted || !mapRef.current) return;
 
-        const firstMarkerPoint = markerPopups[0]
-          ? { latitude: markerPopups[0].lat, longitude: markerPopups[0].lng }
+        const firstMarkerPoint = markerGroups[0]
+          ? { latitude: markerGroups[0].lat, longitude: markerGroups[0].lng }
           : null;
         const firstPoint = routePath[0] || firstMarkerPoint;
         const center = toLatLng(firstPoint) || new window.naver.maps.LatLng(37.5665, 126.9780);
@@ -83,33 +142,31 @@ export function MapView({ mode = 'route', popups, onBack, route, onShowDetail })
         overlaysRef.current.forEach((overlay) => overlay.setMap(null));
         overlaysRef.current = [];
 
-        markerPopups.forEach((popup, index) => {
-          const markerPosition = new window.naver.maps.LatLng(popup.lat, popup.lng);
+        markerGroups.forEach((group) => {
+          const markerPosition = new window.naver.maps.LatLng(group.lat, group.lng);
           const marker = new window.naver.maps.Marker({
             position: markerPosition,
             map,
-            title: popup.name,
+            title: group.popups.map((popup) => popup.name).join(', '),
             icon: {
-              content: `
-                <button class="map-popup-marker ${mode === 'bookmark' ? 'map-popup-marker--bookmark' : 'map-popup-marker--route'}" type="button">
-                  ${mode === 'bookmark' && popup.image ? `<img class="map-popup-poster" src="${escapeHtml(popup.image)}" alt="" />` : ''}
-                  ${mode === 'route' ? `<span class="map-popup-order">${index + 1}</span>` : ''}
-                  <span class="map-popup-pin"></span>
-                  <span class="map-popup-label">${escapeHtml(popup.name)}</span>
-                </button>
-              `,
+              content: renderMarkerContent(group, mode),
               anchor: new window.naver.maps.Point(18, 42),
             },
           });
           const infoWindow = new window.naver.maps.InfoWindow({
-            content: `<div style="padding:8px 10px;font-size:12px;font-weight:700;">${index + 1}. ${popup.name}</div>`,
+            content: `<div style="padding:8px 10px;font-size:12px;font-weight:700;">${group.popups.map((popup) => `${popup.routeOrder}. ${escapeHtml(popup.name)}`).join('<br />')}</div>`,
           });
 
-          window.naver.maps.Event.addListener(marker, 'click', () => {
+          window.naver.maps.Event.addListener(marker, 'click', (event) => {
+            const popupId = event?.domEvent?.target?.dataset?.popupId;
+            const selectedPopup = popupId
+              ? group.popups.find((popup) => String(popup.id) === String(popupId))
+              : group.popups[0];
+
             if (mode === 'route') {
               infoWindow.open(map, marker);
             }
-            onShowDetail?.(popup);
+            onShowDetail?.(selectedPopup);
           });
 
           overlaysRef.current.push(marker, infoWindow);
@@ -130,7 +187,7 @@ export function MapView({ mode = 'route', popups, onBack, route, onShowDetail })
 
         const boundPoints = [
           ...path,
-          ...markerPopups.map((popup) => new window.naver.maps.LatLng(popup.lat, popup.lng)),
+          ...markerGroups.map((group) => new window.naver.maps.LatLng(group.lat, group.lng)),
         ];
 
         if (boundPoints.length > 0) {
@@ -150,7 +207,7 @@ export function MapView({ mode = 'route', popups, onBack, route, onShowDetail })
       overlaysRef.current.forEach((overlay) => overlay.setMap?.(null));
       overlaysRef.current = [];
     };
-  }, [mode, ncpKeyId, markerPopups, onShowDetail, routePath]);
+  }, [mode, ncpKeyId, markerGroups, onShowDetail, routePath]);
 
   return (
     <div className="mapview-container">
