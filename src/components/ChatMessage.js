@@ -4,7 +4,7 @@ export function ChatMessage({ message, isBot, popups, onShowRoute, onShowDetail 
   return (
     <div className={`message-row ${isBot ? 'message-row--bot' : 'message-row--user'}`}>
       {isBot && (
-        <img className="bot-avatar" src="/popcorn-logo.svg" alt="POPCORN" />
+        <img className="bot-avatar" src="/popcorn_brand_logo.png" alt="POPCORN" />
       )}
 
       <div className="message-body">

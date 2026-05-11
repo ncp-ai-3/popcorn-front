@@ -2,7 +2,7 @@ import { useState } from 'react';
 import './LoginPage.css';
 import { apiFetch } from '../api';
 
-export function LoginPage({ onLogin }) {
+export function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
 
   const handleNaverLogin = async () => {
@@ -26,27 +26,40 @@ export function LoginPage({ onLogin }) {
   };
 
   return (
-    <div className="login-container">
-      <div className="login-box">
-        <div className="login-logo">📍</div>
-        <h1 className="login-title">서울 팝업 추천</h1>
-        <p className="login-subtitle">AI 기반 맞춤형 팝업 경로 추천</p>
+    <div className="login-page">
+      <div className="login-background" />
+      <main className="login-main">
+        <section className="login-card">
+          <img className="login-logo" src="/popcorn_brand_logo.png" alt="POPCORN Logo" />
+          <div className="login-copy">
+            <h1 className="login-title">
+              <span>AI가 골라주는</span>
+              <strong>나만의 팝업 코스</strong>
+            </h1>
+            <p className="login-subtitle">
+              대화만으로 나에게 맞는 팝업스토어를 추천받고, 경로까지 확인하는 AI 팝업 추천 서비스
+            </p>
+          </div>
         <button
           className="naver-login-btn"
           onClick={handleNaverLogin}
           disabled={isLoading}
         >
-          <span className="naver-icon">N</span>
-          {isLoading ? '로그인 페이지로 이동 중...' : '네이버로 로그인'}
+            <span className="naver-icon">N</span>
+            {isLoading ? '로그인 페이지로 이동 중...' : '네이버로 시작하기'}
         </button>
-        <button
-          type="button"
-          className="chat-preview-btn"
-          onClick={onLogin}
-        >
-          채팅 화면 보기
-        </button>
-      </div>
+          <p className="login-support">
+            New to POPCORN? <a href="/">Request Invitation</a>
+          </p>
+        </section>
+      </main>
+      <footer className="login-footer">
+        <div className="login-footer-links">
+          <a href="/">Terms of Service</a>
+          <a href="/">Privacy Policy</a>
+        </div>
+        <p>© 2026 POPCORN. CURATED EXPERIENCES.</p>
+      </footer>
     </div>
   );
 }
