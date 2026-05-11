@@ -217,7 +217,7 @@ export function MapView({ mode = 'route', popups, onBack, route, routeError, rou
   }, [mode, ncpKeyId, markerGroups, onShowDetail, routePath]);
 
   return (
-    <div className="mapview-container">
+    <div className={`mapview-container ${mode === 'bookmark' ? 'mapview-container--bookmark' : ''}`}>
       <div className="mapview-header">
         <div className="mapview-header-inner">
           <button className="back-btn" onClick={onBack}>←</button>
