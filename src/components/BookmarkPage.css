@@ -1,0 +1,140 @@
+.bookmark-page {
+  min-height: 100dvh;
+  background: #fbfafc;
+  padding: 28px 20px 48px;
+}
+
+.bookmark-header {
+  max-width: 960px;
+  margin: 0 auto 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+}
+
+.bookmark-header h1 {
+  color: #111827;
+  font-size: 28px;
+  margin-bottom: 4px;
+}
+
+.bookmark-header p {
+  color: #6b7280;
+  font-size: 14px;
+}
+
+.bookmark-back-btn {
+  padding: 10px 15px;
+  border: 1px solid #d8c99a;
+  border-radius: 10px;
+  background: white;
+  color: #745302;
+  cursor: pointer;
+  font-weight: 700;
+  font-family: 'Noto Sans KR', sans-serif;
+}
+
+.bookmark-empty {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 56px 24px;
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.8);
+  text-align: center;
+}
+
+.bookmark-empty h2 {
+  color: #111827;
+  font-size: 20px;
+  margin-bottom: 8px;
+}
+
+.bookmark-empty p {
+  color: #6b7280;
+  font-size: 14px;
+}
+
+.bookmark-grid {
+  max-width: 960px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+}
+
+.bookmark-card {
+  background: #fffdf8;
+  border: 1px solid #eee4ca;
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 8px 24px rgba(17, 24, 39, 0.08);
+}
+
+.bookmark-image {
+  width: 100%;
+  aspect-ratio: 16 / 10;
+  object-fit: cover;
+  background: #f3f4f6;
+}
+
+.bookmark-content {
+  padding: 14px 14px 4px;
+}
+
+.bookmark-content h2 {
+  color: #111827;
+  font-size: 17px;
+  line-height: 1.35;
+  margin-bottom: 10px;
+}
+
+.bookmark-content p {
+  display: grid;
+  grid-template-columns: 42px 1fr;
+  gap: 8px;
+  color: #374151;
+  font-size: 13px;
+  line-height: 1.45;
+  margin-bottom: 5px;
+}
+
+.bookmark-content span {
+  color: #6b7280;
+  font-weight: 700;
+}
+
+.bookmark-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  padding: 14px;
+}
+
+.bookmark-actions button {
+  padding: 9px 10px;
+  border-radius: 9px;
+  border: 1px solid #d8c99a;
+  background: #fffdf8;
+  color: #745302;
+  cursor: pointer;
+  font-weight: 700;
+  font-family: 'Noto Sans KR', sans-serif;
+}
+
+.bookmark-remove-btn {
+  border-color: #ead8b4 !important;
+  color: #8a6800 !important;
+}
+
+@media (max-width: 560px) {
+  .bookmark-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .bookmark-back-btn {
+    width: 100%;
+  }
+}
