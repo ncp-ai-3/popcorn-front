@@ -36,20 +36,6 @@ const INITIAL_MESSAGES = [
   },
 ];
 
-function createFallbackRoute(popups) {
-  return {
-    totalDistanceMeter: 0,
-    totalDurationMinute: 0,
-    totalDurationMs: 0,
-    path: popups
-      .map((popup) => ({
-        latitude: popup.lat || popup.latitude,
-        longitude: popup.lng || popup.longitude,
-      }))
-      .filter((point) => point.latitude && point.longitude),
-  };
-}
-
 function loadBookmarks() {
   try {
     return JSON.parse(localStorage.getItem(BOOKMARK_STORAGE_KEY)) || [];
@@ -234,14 +220,28 @@ export default function App() {
     );
     if (currentMessage?.popups) {
       const targetPopupIds = currentMessage.popups.map((popup) => Number(popup.id));
+      const payload = {
+        startPopupId: Number(popupId),
+        targetPopupIds,
+      };
+
+      setMapMode('route');
+      setSelectedPopups([]);
+      setSelectedRoute(null);
+      setSelectedPopupDetail(null);
+      window.history.pushState({}, '', `/map?mode=route&popupId=${popupId}`);
+      setCurrentPath('/map');
+      setShowMap(true);
+
+      if (process.env.NODE_ENV === 'development') {
+        console.log('[route] click popupId:', popupId);
+        console.log('[route] request payload:', payload);
+      }
 
       try {
         const data = await apiFetch('/api/popups/routes/optimize', {
           method: 'POST',
-          body: JSON.stringify({
-            startPopupId: Number(popupId),
-            targetPopupIds,
-          }),
+          body: JSON.stringify(payload),
         });
         const result = data.result || data;
         const orderedPopups = (result.orderedPopups || []).map((popup) => ({
@@ -258,16 +258,15 @@ export default function App() {
           order: popup.order,
         }));
 
+        if (process.env.NODE_ENV === 'development') {
+          console.log('[route] response item count:', orderedPopups.length);
+        }
+
         setSelectedPopups(orderedPopups.length > 0 ? orderedPopups : currentMessage.popups);
         setSelectedRoute(result.route || null);
       } catch (error) {
-        setSelectedPopups(currentMessage.popups);
-        setSelectedRoute(createFallbackRoute(currentMessage.popups));
-      } finally {
-        setMapMode('route');
-        window.history.pushState({}, '', `/map?mode=route&popupId=${popupId}`);
-        setCurrentPath('/map');
-        setShowMap(true);
+        setSelectedPopups([]);
+        setSelectedRoute(null);
       }
     }
   };

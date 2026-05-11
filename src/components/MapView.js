@@ -118,6 +118,11 @@ export function MapView({ mode = 'route', popups, onBack, route, onShowDetail })
   );
 
   useEffect(() => {
+    overlaysRef.current.forEach((overlay) => overlay.setMap?.(null));
+    overlaysRef.current = [];
+  }, [popups, route]);
+
+  useEffect(() => {
     if (!ncpKeyId) {
       setMapError('네이버 지도 키가 필요합니다. REACT_APP_NAVER_MAP_NCP_KEY_ID를 설정해주세요.');
       return;
@@ -243,7 +248,7 @@ export function MapView({ mode = 'route', popups, onBack, route, onShowDetail })
             {popups.map((popup, index) => (
               <button
                 className={`route-item ${mode === 'bookmark' ? 'route-item--clickable' : ''}`}
-                key={popup.id}
+                key={`${popup.id}-${popup.order || popup.routeOrder || index}`}
                 type="button"
                 onClick={() => mode === 'bookmark' && onShowDetail?.(popup)}
               >
