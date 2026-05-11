@@ -265,6 +265,14 @@
   background: #f3efe3;
 }
 
+.route-empty {
+  padding: 18px 12px;
+  border-radius: 8px;
+  background: #f9fafb;
+  color: #6b7280;
+  font-size: 13px;
+}
+
 .route-number {
   width: 32px;
   height: 32px;

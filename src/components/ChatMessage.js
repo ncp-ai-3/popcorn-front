@@ -29,7 +29,7 @@ export function ChatMessage({ message, isBot, popups, onShowRoute, onShowDetail 
                   {popup.showRoute !== false && (
                     <button
                       className="route-btn"
-                      onClick={() => onShowRoute?.(popup.id)}
+                      onClick={() => onShowRoute?.(popup, popups)}
                     >
                       경로보기
                     </button>

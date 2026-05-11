@@ -100,7 +100,7 @@ function renderMarkerContent(group, mode) {
   `;
 }
 
-export function MapView({ mode = 'route', popups, onBack, route, onShowDetail }) {
+export function MapView({ mode = 'route', popups, onBack, route, routeError, routeLoading, onShowDetail }) {
   const mapRef = useRef(null);
   const mapInstanceRef = useRef(null);
   const overlaysRef = useRef([]);
@@ -245,6 +245,15 @@ export function MapView({ mode = 'route', popups, onBack, route, onShowDetail })
           </div>
 
           <div className="route-list">
+            {routeError && popups.length === 0 && (
+              <div className="route-empty">{routeError.message || '경로를 불러오지 못했습니다.'}</div>
+            )}
+            {routeLoading && popups.length === 0 && (
+              <div className="route-empty">경로를 불러오는 중입니다.</div>
+            )}
+            {!routeError && !routeLoading && popups.length === 0 && (
+              <div className="route-empty">표시할 경로가 없습니다.</div>
+            )}
             {popups.map((popup, index) => (
               <button
                 className={`route-item ${mode === 'bookmark' ? 'route-item--clickable' : ''}`}

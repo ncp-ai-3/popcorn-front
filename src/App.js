@@ -75,6 +75,38 @@ function normalizeBookmark(bookmark) {
   };
 }
 
+function getRoutePayloadFromSearch(search) {
+  const searchParams = new URLSearchParams(search);
+  const popupId = Number(searchParams.get('popupId'));
+  const targetPopupIds = (searchParams.get('targets') || '')
+    .split(',')
+    .map(Number)
+    .filter(Boolean);
+
+  if (!popupId || targetPopupIds.length === 0) return null;
+
+  return {
+    startPopupId: popupId,
+    targetPopupIds,
+  };
+}
+
+function mapOrderedPopup(popup) {
+  return {
+    id: String(popup.popupId || popup.id),
+    name: popup.title || popup.name,
+    location: popup.address || popup.location,
+    image: popup.imageUrl || popup.image,
+    lat: popup.latitude || popup.lat,
+    lng: popup.longitude || popup.lng,
+    period: `${popup.startDate || ''} - ${popup.endDate || ''}`,
+    reservationUrl: popup.reservationUrl,
+    openTime: popup.openTime,
+    closeTime: popup.closeTime,
+    order: popup.order || popup.routeOrder || popup.sequence,
+  };
+}
+
 export default function App() {
 
   const [isLoggedIn, setIsLoggedIn] = useState(
@@ -93,6 +125,9 @@ export default function App() {
   const [mapMode, setMapMode] = useState('route');
   const [selectedPopups, setSelectedPopups] = useState([]);
   const [selectedRoute, setSelectedRoute] = useState(null);
+  const [routeError, setRouteError] = useState(null);
+  const [routeLoading, setRouteLoading] = useState(false);
+  const [routeRequestKey, setRouteRequestKey] = useState(window.location.search);
   const [selectedPopupDetail, setSelectedPopupDetail] = useState(null);
   const [isDetailLoading, setIsDetailLoading] = useState(false);
   const [bookmarks, setBookmarks] = useState(loadBookmarks);
@@ -104,6 +139,42 @@ export default function App() {
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
+
+  const loadRoute = useCallback(async (payload) => {
+    setMapMode('route');
+    setSelectedPopups([]);
+    setSelectedRoute(null);
+    setSelectedPopupDetail(null);
+    setRouteError(null);
+    setRouteLoading(true);
+
+    if (process.env.NODE_ENV === 'development') {
+      console.log('[route] click popupId:', payload.startPopupId);
+      console.log('[route] request payload:', payload);
+    }
+
+    try {
+      const data = await apiFetch('/api/popups/routes/optimize', {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      });
+      const result = data.result || data;
+      const orderedPopups = (result.orderedPopups || []).map(mapOrderedPopup);
+
+      if (process.env.NODE_ENV === 'development') {
+        console.log('[route] response item count:', orderedPopups.length);
+      }
+
+      setSelectedPopups(orderedPopups);
+      setSelectedRoute(result.route || null);
+    } catch (error) {
+      setSelectedPopups([]);
+      setSelectedRoute(null);
+      setRouteError(error);
+    } finally {
+      setRouteLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
     scrollToBottom();
@@ -130,20 +201,17 @@ export default function App() {
 
       if (nextPath !== '/map') {
         setShowMap(false);
-      } else if (selectedPopups.length > 0) {
+      } else {
         const params = new URLSearchParams(window.location.search);
         setMapMode(params.get('mode') || 'route');
+        setRouteRequestKey(window.location.search);
         setShowMap(true);
-      } else {
-        window.history.replaceState({}, '', '/chat');
-        setCurrentPath('/chat');
-        setShowMap(false);
       }
     };
 
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
-  }, [selectedPopups.length]);
+  }, []);
 
   useEffect(() => {
     return () => {
@@ -158,6 +226,27 @@ export default function App() {
       setCurrentPath('/chat');
     }
   }, [isLoggedIn, isCallback, isChatPath, isBookmarkPath, isMapPath]);
+
+  useEffect(() => {
+    if (!isLoggedIn || currentPath !== '/map') return;
+
+    const params = new URLSearchParams(routeRequestKey);
+    const mode = params.get('mode') || 'route';
+    setMapMode(mode);
+    setShowMap(true);
+
+    if (mode === 'route') {
+      const payload = getRoutePayloadFromSearch(routeRequestKey);
+
+      if (payload) {
+        loadRoute(payload);
+      } else {
+        setSelectedPopups([]);
+        setSelectedRoute(null);
+        setRouteError(new Error('경로 정보가 없습니다.'));
+      }
+    }
+  }, [currentPath, isLoggedIn, loadRoute, routeRequestKey]);
 
   const handleSendMessage = async (text) => {
     chatAbortRef.current?.abort();
@@ -214,61 +303,19 @@ export default function App() {
     }
   };
 
-  const handleShowRoute = async (popupId) => {
-    const currentMessage = messages.find((msg) =>
-      msg.popups?.some((p) => p.id === popupId)
-    );
-    if (currentMessage?.popups) {
-      const targetPopupIds = currentMessage.popups.map((popup) => Number(popup.id));
-      const payload = {
-        startPopupId: Number(popupId),
-        targetPopupIds,
-      };
+  const handleShowRoute = (clickedPopup, parentMessagePopups = []) => {
+    const startPopupId = Number(clickedPopup.id);
+    const targetPopupIds = parentMessagePopups
+      .map((popup) => Number(popup.id))
+      .filter(Boolean);
 
-      setMapMode('route');
-      setSelectedPopups([]);
-      setSelectedRoute(null);
-      setSelectedPopupDetail(null);
-      window.history.pushState({}, '', `/map?mode=route&popupId=${popupId}`);
-      setCurrentPath('/map');
-      setShowMap(true);
+    if (!startPopupId || targetPopupIds.length === 0) return;
 
-      if (process.env.NODE_ENV === 'development') {
-        console.log('[route] click popupId:', popupId);
-        console.log('[route] request payload:', payload);
-      }
-
-      try {
-        const data = await apiFetch('/api/popups/routes/optimize', {
-          method: 'POST',
-          body: JSON.stringify(payload),
-        });
-        const result = data.result || data;
-        const orderedPopups = (result.orderedPopups || []).map((popup) => ({
-          id: String(popup.popupId),
-          name: popup.title,
-          location: popup.address,
-          image: popup.imageUrl,
-          lat: popup.latitude,
-          lng: popup.longitude,
-          period: `${popup.startDate || ''} - ${popup.endDate || ''}`,
-          reservationUrl: popup.reservationUrl,
-          openTime: popup.openTime,
-          closeTime: popup.closeTime,
-          order: popup.order,
-        }));
-
-        if (process.env.NODE_ENV === 'development') {
-          console.log('[route] response item count:', orderedPopups.length);
-        }
-
-        setSelectedPopups(orderedPopups.length > 0 ? orderedPopups : currentMessage.popups);
-        setSelectedRoute(result.route || null);
-      } catch (error) {
-        setSelectedPopups([]);
-        setSelectedRoute(null);
-      }
-    }
+    const search = `?mode=route&popupId=${startPopupId}&targets=${targetPopupIds.join(',')}`;
+    window.history.pushState({}, '', `/map${search}`);
+    setCurrentPath('/map');
+    setRouteRequestKey(search);
+    setShowMap(true);
   };
 
   const handleShowPopupDetail = async (popup) => {
@@ -437,6 +484,8 @@ export default function App() {
             window.history.back();
           }}
           route={selectedRoute}
+          routeError={routeError}
+          routeLoading={routeLoading}
           onShowDetail={handleShowPopupDetail}
         />
         <PopupDetailModal
