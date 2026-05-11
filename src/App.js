@@ -126,6 +126,16 @@ function saveBookmarks(bookmarks) {
   localStorage.setItem(BOOKMARK_STORAGE_KEY, JSON.stringify(bookmarks));
 }
 
+function normalizeBookmark(bookmark) {
+  if (bookmark.popup) return bookmark;
+
+  return {
+    bookmarkId: bookmark.bookmarkId,
+    popupId: bookmark.popupId,
+    popup: normalizePopup(bookmark),
+  };
+}
+
 export default function App() {
 
   const [isLoggedIn, setIsLoggedIn] = useState(
@@ -356,11 +366,23 @@ export default function App() {
     }
   };
 
-  const handleOpenBookmarks = useCallback(() => {
+  const handleOpenBookmarks = useCallback(async () => {
     window.history.replaceState({}, '', '/bookmarks');
     setCurrentPath('/bookmarks');
     setSelectedPopupDetail(null);
     setShowMap(false);
+
+    try {
+      const data = await apiFetch('/api/v1/bookmarks');
+      const result = data.result || data;
+      const nextBookmarks = (Array.isArray(result) ? result : result.bookmarks || [])
+        .map(normalizeBookmark);
+
+      setBookmarks(nextBookmarks);
+      saveBookmarks(nextBookmarks);
+    } catch (error) {
+      alert(error.message || '북마크 목록을 불러오지 못했습니다.');
+    }
   }, []);
 
   const handleOpenMap = useCallback(async () => {
@@ -373,7 +395,7 @@ export default function App() {
       const data = await apiFetch('/api/v1/bookmarks');
       const result = data.result || data;
       const bookmarkList = Array.isArray(result) ? result : result.bookmarks || [];
-      setSelectedPopups(bookmarkList.map(normalizePopup));
+      setSelectedPopups(bookmarkList.map(normalizeBookmark).map((bookmark) => bookmark.popup));
     } catch (error) {
       setSelectedPopups(bookmarks.map((bookmark) => bookmark.popup).filter(Boolean));
     }
