@@ -28,96 +28,11 @@ function normalizePopup(popup) {
   };
 }
 
-const FEATURED_POPUP = normalizePopup({
-  id: 40,
-  imageUrl: 'https://d8nffddmkwqeq.cloudfront.net/store/df67eaea%2Ce484%2C44e2%2Ca2ca%2C8f3c5f3361d3',
-  title: '베르디 전시 - I Believe in Me',
-  mainBrand: 'VERDY',
-  hashtags: '베르디 전시,베르디,롯데뮤지엄,I Believe in Me,VERDY,전시',
-  description: '동시대 유스 컬처를 대표하는 아티스트 VERDY의 첫 미술관 개인전입니다.',
-  address: '서울 송파구 올림픽로 300 롯데월드타워 7층 롯데뮤지엄',
-  startDate: '2026-04-24',
-  endDate: '2026-07-19',
-  openTime: '10:30:00',
-  closeTime: '19:00:00',
-  reservationUrl: null,
-  status: 'open',
-  categories: [{ id: 3, name: '전시' }],
-  showRoute: false,
-});
-
-const DEMO_ROUTE_POPUPS = [
-  normalizePopup({
-    id: 1,
-    imageUrl: 'https://d8nffddmkwqeq.cloudfront.net/store/c1929a3e%2Cf195%2C4e0c%2C89f5%2Cc7755380eb09',
-    title: 'THE GATHERING SEOUL 2026',
-    mainBrand: 'X THE LEAGUE',
-    address: '서울 성동구 연무장15길 11 SFACTORY D동',
-    startDate: '2026-05-10',
-    endDate: '2026-05-10',
-    openTime: '12:30:00',
-    closeTime: '20:00:00',
-    reservationUrl: 'https://xtheleague.com/xtl/about',
-    status: 'done',
-    latitude: 37.54283,
-    longitude: 127.0589872,
-    lat: 37.54283,
-    lng: 127.0589872,
-    categories: [{ id: 1, name: '연예/크리에이터' }],
-  }),
-  normalizePopup({
-    id: 30,
-    imageUrl: 'https://d8nffddmkwqeq.cloudfront.net/store/936fb19b%2C5d81%2C429f%2C9569%2Cdb4083eb77a4',
-    title: '리즈다 팝업',
-    mainBrand: 'LIZDA',
-    address: '서울 성동구 성수이로7가길 20-1',
-    startDate: '2026-04-15',
-    endDate: '2026-05-17',
-    openTime: '10:00:00',
-    closeTime: '21:00:00',
-    status: 'open',
-    latitude: 37.5419341,
-    longitude: 127.0555625,
-    lat: 37.5419341,
-    lng: 127.0555625,
-    categories: [{ id: 2, name: '뷰티/헬스' }],
-  }),
-  normalizePopup({
-    id: 61,
-    imageUrl: 'https://d8nffddmkwqeq.cloudfront.net/store/de50a43d%2C1bed%2C492c%2Cbf70%2Cbefb2320d205',
-    title: '후아유 팝업스토어',
-    mainBrand: 'WHO.A.U',
-    address: '서울 중구 명동8길 40 에이랜드 명동 본점',
-    startDate: '2025-12-03',
-    endDate: '2026-06-02',
-    openTime: '09:00:00',
-    closeTime: '18:00:00',
-    status: 'open',
-    latitude: 37.5619002,
-    longitude: 126.9847445,
-    lat: 37.5619002,
-    lng: 126.9847445,
-    categories: [{ id: 4, name: '패션' }],
-  }),
-];
-
 const INITIAL_MESSAGES = [
   {
     id: '1',
     text: '안녕하세요! 서울의 팝업 경로를 추천해드립니다. 가고 싶은 지역과 팝업 테마를 알려주세요!',
     isBot: true,
-  },
-  {
-    id: 'featured-popup',
-    text: '추천 팝업입니다.',
-    isBot: true,
-    popups: [FEATURED_POPUP],
-  },
-  {
-    id: 'demo-route-popups',
-    text: '경로 시연용 추천 팝업입니다.',
-    isBot: true,
-    popups: DEMO_ROUTE_POPUPS,
   },
 ];
 
@@ -156,7 +71,9 @@ function loadChatMessages() {
   try {
     const saved = sessionStorage.getItem(getChatStorageKey());
     const parsed = saved ? JSON.parse(saved) : null;
-    return Array.isArray(parsed) ? parsed : INITIAL_MESSAGES;
+    return Array.isArray(parsed)
+      ? parsed.filter((message) => !['featured-popup', 'demo-route-popups'].includes(message.id))
+      : INITIAL_MESSAGES;
   } catch (error) {
     return INITIAL_MESSAGES;
   }
