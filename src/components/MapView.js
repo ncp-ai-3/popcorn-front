@@ -89,15 +89,17 @@ export function MapView({ mode = 'route', popups, onBack, route, onShowDetail })
             position: markerPosition,
             map,
             title: popup.name,
-            icon: mode === 'bookmark' ? {
+            icon: {
               content: `
-                <button class="map-popup-marker" type="button">
+                <button class="map-popup-marker ${mode === 'bookmark' ? 'map-popup-marker--bookmark' : 'map-popup-marker--route'}" type="button">
+                  ${mode === 'bookmark' && popup.image ? `<img class="map-popup-poster" src="${escapeHtml(popup.image)}" alt="" />` : ''}
+                  ${mode === 'route' ? `<span class="map-popup-order">${index + 1}</span>` : ''}
                   <span class="map-popup-pin"></span>
                   <span class="map-popup-label">${escapeHtml(popup.name)}</span>
                 </button>
               `,
               anchor: new window.naver.maps.Point(18, 42),
-            } : undefined,
+            },
           });
           const infoWindow = new window.naver.maps.InfoWindow({
             content: `<div style="padding:8px 10px;font-size:12px;font-weight:700;">${index + 1}. ${popup.name}</div>`,

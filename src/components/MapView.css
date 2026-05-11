@@ -97,6 +97,38 @@
   transform: translateX(-12px);
 }
 
+.map-popup-marker--bookmark {
+  gap: 8px;
+  align-items: flex-end;
+}
+
+.map-popup-poster {
+  position: absolute;
+  left: -8px;
+  bottom: 30px;
+  width: 42px;
+  height: 42px;
+  border-radius: 6px;
+  object-fit: cover;
+  border: 3px solid #ef1742;
+  background: white;
+  box-shadow: 0 4px 10px rgba(30, 30, 30, 0.18);
+}
+
+.map-popup-order {
+  width: 24px;
+  height: 24px;
+  border-radius: 999px;
+  background: #8a6800;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 800;
+  box-shadow: 0 3px 8px rgba(124, 91, 0, 0.24);
+}
+
 .map-popup-pin {
   width: 26px;
   height: 26px;
