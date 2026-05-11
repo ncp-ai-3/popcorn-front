@@ -253,7 +253,7 @@
 }
 
 .mapview-container--bookmark .route-list {
-  max-height: 360px;
+  max-height: 504px;
   overflow-y: auto;
   overscroll-behavior: contain;
   padding-right: 4px;
@@ -265,7 +265,7 @@
   }
 
   .mapview-container--bookmark .route-list {
-    max-height: 320px;
+    max-height: 432px;
   }
 }
 
@@ -310,6 +310,10 @@
   font-size: 13px;
   font-weight: 600;
   flex-shrink: 0;
+}
+
+.mapview-container--bookmark .route-number {
+  display: none;
 }
 
 .route-thumb {

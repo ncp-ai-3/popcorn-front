@@ -122,7 +122,9 @@ export default function App() {
   const [messages, setMessages] = useState(loadChatMessages);
   const [isLoading, setIsLoading] = useState(false);
   const [showMap, setShowMap] = useState(false);
-  const [mapMode, setMapMode] = useState('route');
+  const [mapMode, setMapMode] = useState(
+    new URLSearchParams(window.location.search).get('mode') || 'route'
+  );
   const [selectedPopups, setSelectedPopups] = useState([]);
   const [selectedRoute, setSelectedRoute] = useState(null);
   const [routeError, setRouteError] = useState(null);
@@ -175,6 +177,22 @@ export default function App() {
       setRouteLoading(false);
     }
   }, []);
+
+  const loadBookmarkMap = useCallback(async () => {
+    setMapMode('bookmark');
+    setSelectedRoute(null);
+    setSelectedPopupDetail(null);
+    setRouteError(null);
+
+    try {
+      const data = await apiFetch('/api/v1/bookmarks');
+      const result = data.result || data;
+      const bookmarkList = Array.isArray(result) ? result : result.bookmarks || [];
+      setSelectedPopups(bookmarkList.map(normalizeBookmark).map((bookmark) => bookmark.popup));
+    } catch (error) {
+      setSelectedPopups(bookmarks.map((bookmark) => bookmark.popup).filter(Boolean));
+    }
+  }, [bookmarks]);
 
   useEffect(() => {
     scrollToBottom();
@@ -235,6 +253,11 @@ export default function App() {
     setMapMode(mode);
     setShowMap(true);
 
+    if (mode === 'bookmark') {
+      loadBookmarkMap();
+      return;
+    }
+
     if (mode === 'route') {
       const payload = getRoutePayloadFromSearch(routeRequestKey);
 
@@ -246,7 +269,7 @@ export default function App() {
         setRouteError(new Error('경로 정보가 없습니다.'));
       }
     }
-  }, [currentPath, isLoggedIn, loadRoute, routeRequestKey]);
+  }, [currentPath, isLoggedIn, loadBookmarkMap, loadRoute, routeRequestKey]);
 
   const handleSendMessage = async (text) => {
     chatAbortRef.current?.abort();
@@ -428,23 +451,11 @@ export default function App() {
   }, []);
 
   const handleOpenMap = useCallback(async () => {
-    setMapMode('bookmark');
-    setSelectedRoute(null);
-    setSelectedPopupDetail(null);
     window.history.pushState({}, '', '/map?mode=bookmark');
     setCurrentPath('/map');
-
-    try {
-      const data = await apiFetch('/api/v1/bookmarks');
-      const result = data.result || data;
-      const bookmarkList = Array.isArray(result) ? result : result.bookmarks || [];
-      setSelectedPopups(bookmarkList.map(normalizeBookmark).map((bookmark) => bookmark.popup));
-    } catch (error) {
-      setSelectedPopups(bookmarks.map((bookmark) => bookmark.popup).filter(Boolean));
-    }
-
+    setRouteRequestKey('?mode=bookmark');
     setShowMap(true);
-  }, [bookmarks]);
+  }, []);
 
   const handleBackToChat = useCallback(() => {
     window.history.back();
