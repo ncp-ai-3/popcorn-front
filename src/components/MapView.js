@@ -79,9 +79,11 @@ function groupPopupsByCoordinate(popups) {
 }
 
 function renderMarkerContent(group, mode) {
-  const orderText = group.popups.map((popup) => popup.routeOrder).join(', ');
+  const orderHtml = group.popups
+    .map((popup) => `<span>${escapeHtml(popup.routeOrder)}</span>`)
+    .join('');
   const titleHtml = group.popups
-    .map((popup) => `<span>${mode === 'route' ? `${popup.routeOrder}. ` : ''}${escapeHtml(popup.name)}</span>`)
+    .map((popup) => `<span>${escapeHtml(popup.name)}</span>`)
     .join('');
   const posterHtml = group.popups
     .filter((popup) => popup.image)
@@ -91,7 +93,7 @@ function renderMarkerContent(group, mode) {
   return `
     <button class="map-popup-marker ${mode === 'bookmark' ? 'map-popup-marker--bookmark' : 'map-popup-marker--route'}" type="button">
       ${posterHtml ? `<span class="map-popup-posters">${posterHtml}</span>` : ''}
-      ${mode === 'route' ? `<span class="map-popup-order">${escapeHtml(orderText)}</span>` : ''}
+      ${mode === 'route' ? `<span class="map-popup-orders">${orderHtml}</span>` : ''}
       <span class="map-popup-pin"></span>
       <span class="map-popup-label">${titleHtml}</span>
     </button>
